@@ -1,6 +1,7 @@
 archive/
 checkpoints/
 helpers/
+common/
 misc/
 plots/
 wandb/

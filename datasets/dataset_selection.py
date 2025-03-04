@@ -72,7 +72,7 @@ def get_dataloaders(args, transform):
             seed=args.seed,
             drop_last=False,
             data_path=args.data_path,
-            transform=None
+            transform=transform
         )
         val_dataset, val_loader = mrsffia_loader(
             split='test',

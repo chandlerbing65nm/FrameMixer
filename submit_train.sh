@@ -51,7 +51,7 @@ python train.py \
     --fmin 50 \
     --target_duration 2 \
     --ablation \
-    --audiomentation 'time_stretch'
+    # --audiomentation 'time_stretch'
     # --noise \
     # --noise_segment_ratio 0.1 \
     # --frontend 'lfcc' \

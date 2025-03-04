@@ -30,6 +30,8 @@ def save_checkpoint(model, args, best_val_map, best_val_acc, current_val_map, cu
             ablation_params = args.diffres_params
         elif args.spec_aug == 'specmix':
             ablation_params = args.specmix_params
+        elif args.spec_aug == 'fma':
+            ablation_params = args.framemixer_params
         else:
             # if using fma or none - not yet implemented
             ablation_params = "unknown"

@@ -67,10 +67,13 @@ class SpecAugmenter(nn.Module):
             max_time_bands=int(specmix_params[4])
         )
 
-        # FMA (unchanged)
+        # Parse FrameMixer parameters
+        framemixer_params = args.framemixer_params.split(',')
         self.fma = FMA(
             in_t_dim=int((sample_rate / hop_size) * duration) + 1,
-            in_f_dim=mel_bins
+            in_f_dim=mel_bins,
+            temp=float(framemixer_params[0]),
+            Tr=float(framemixer_params[1])
         )
 
     def forward(self, x):

@@ -30,6 +30,7 @@ class FrameMixup(nn.Module):
         self.temperature = temperature
 
     def forward(self, feature):
+
         batch_size, seq_len, feat_dim = feature.size()  # feature: [batch_size, seq_len, feat_dim]
         noise_template = self.noise_template.expand(batch_size, -1, -1)  # [batch_size, reduced_len, seq_len]
         augmenting_path = self.compute_augmenting_path(noise_template)  # [batch_size, reduced_len, seq_len]
@@ -47,17 +48,19 @@ class FrameMixup(nn.Module):
         return augmented_feature  # [batch_size, reduced_len, feat_dim]
 
 
-class FMA(nn.Module):
-    def __init__(self, in_t_dim, in_f_dim):
+class FrameMixer(nn.Module):
+    def __init__(self, in_t_dim, in_f_dim, temp=0.2, Tr=0.0):
         super().__init__()
         self.input_seq_length = in_t_dim
         self.input_f_dim = in_f_dim
+        self.temperature=temp 
+        self.frame_reduction_ratio = None if Tr == 0.0 else Tr
         
         self.frame_augment = FrameMixup(
             seq_len=self.input_seq_length, 
             feat_dim=self.input_f_dim,
-            temperature=0.2, 
-            frame_reduction_ratio=None,
+            temperature=self.temperature, 
+            frame_reduction_ratio=self.frame_reduction_ratio,
             device='cuda'
         )
 

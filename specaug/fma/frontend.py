@@ -2,15 +2,17 @@ import os
 import torch
 import torch.nn as nn
 # from pydiffres import DiffRes as pydiffres
-from specaug.fma.modules.fma import FMA as FrameMixup
+from specaug.fma.modules.fma import FrameMixer
 
 
 class FMA(nn.Module):
-    def __init__(self, in_t_dim, in_f_dim):
+    def __init__(self, in_t_dim, in_f_dim, temp=0.2, Tr=0.0):
         super(FMA, self).__init__()
-        self.model = FrameMixup(
+        self.model = FrameMixer(
             in_t_dim=in_t_dim,
             in_f_dim=in_f_dim,
+            temp=temp, 
+            Tr=Tr,
         )
 
     def forward(self, data):

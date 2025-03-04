@@ -65,6 +65,8 @@ def parse_args():
     # Ablation Parameters
     ablation_group = parser.add_argument_group('Ablation Parameters')
     ablation_group.add_argument('--ablation', action='store_true', help='Enable ablation studies to override default settings')
+    ablation_group.add_argument('--framemixer_params', type=str, default='0.2,0.0', # 0.2,0.0 # 0.5,0.2 # 0.8,0.4
+                                help='Comma-separated values: temp, Tr')   
     ablation_group.add_argument('--specaugment_params', type=str, default='64,2,8,2', # 32,1,4,1 # 64,2,8,2 # 128,4,16,4
                                 help='Comma-separated values: time_drop_width,time_stripes_num,freq_drop_width,freq_stripes_num')
     ablation_group.add_argument('--diffres_params', type=str, default='0.60,False', # 0.10,False # 0.60,False # 0.90,False

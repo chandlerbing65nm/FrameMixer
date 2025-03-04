@@ -1,3 +1,0 @@
-Test Accuracy: 0.5250
-Test mAP: 0.5857
-Test F1 Score: 0.5171

@@ -10,7 +10,7 @@
 #SBATCH --partition=small-g            
 #SBATCH --time=24:00:00           
 #SBATCH --account=project_465001389
-#SBATCH --output=/users/doloriel/work/Repo/FrameMixer/logs/ablation/affia3k/panns_cnn6/fma-0.5,0.2..out
+#SBATCH --output=/users/doloriel/work/Repo/FrameMixer/logs/ablation/affia3k/panns_cnn6/fma-1.0,0.4.out
 
 
 # fma
@@ -52,7 +52,7 @@ python train.py \
     --fmin 50 \
     --target_duration 2 \
     --ablation \
-    --framemixer_params '0.5,0.2' \
+    --framemixer_params '1.0,0.4' \
     # --audiomentation 'time_stretch'
     # --noise \
     # --noise_segment_ratio 0.1 \

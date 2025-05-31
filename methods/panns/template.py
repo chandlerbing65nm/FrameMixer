@@ -19,6 +19,7 @@ import torch.utils.data
 
 import torchaudio
 import librosa
+from scipy.linalg import hankel
 
 from methods.panns.pytorch_utils import *
 from methods.panns.models import *
@@ -76,6 +77,9 @@ class SpecAugmenter(nn.Module):
             Tr=float(framemixer_params[1])
         )
 
+        # Initialize SSA
+        self.ssa = SingularSpectrumAnalysis(window_size=10)
+
     def forward(self, x):
         spec_aug = self.args.spec_aug
         output_dict = {}
@@ -102,8 +106,121 @@ class SpecAugmenter(nn.Module):
                 output_dict['rn_indices'] = rn_indices
                 output_dict['mixup_lambda'] = lam
 
+        elif spec_aug == 'ssa':
+            # Apply SSA preprocessing
+            x = self.ssa(x)
+
         return x, output_dict
         
+class SingularSpectrumAnalysis(nn.Module):
+    def __init__(self, window_size=10):
+        super(SingularSpectrumAnalysis, self).__init__()
+        self.window_size = window_size
+        
+    def create_trajectory_matrix(self, x, L):
+        """Create trajectory matrix using PyTorch operations"""
+        K = x.size(-1) - L + 1
+        indices = torch.arange(L, device=x.device).unsqueeze(0) + torch.arange(K, device=x.device).unsqueeze(1)
+        trajectory = x[..., indices]  # Shape: (batch_size, channels, K, L)
+        
+        # Verify the shape
+        batch_size, channels, K, L = trajectory.shape
+        assert K > 0, f"Invalid K value: {K}, L: {L}, input shape: {x.shape}"
+        assert L > 0, f"Invalid L value: {L}, input shape: {x.shape}"
+        
+        return trajectory
+        
+    def forward(self, x):
+        """
+        Apply SSA to the input spectrogram using PyTorch operations
+        Args:
+            x: Input tensor of shape (batch_size, channels, time_steps, freq_bins)
+        Returns:
+            Processed tensor of same shape as input
+        """
+        batch_size, channels, time_steps, freq_bins = x.shape
+        
+        # Process each frequency bin independently
+        processed = []
+        for f in range(freq_bins):
+            # Extract time series for this frequency bin
+            time_series = x[..., f]  # Shape: (batch_size, channels, time_steps)
+            
+            # Create trajectory matrix
+            L = min(self.window_size, time_steps // 2)
+            trajectory_matrix = self.create_trajectory_matrix(time_series, L)  # Shape: (batch_size, channels, K, L)
+            
+            # Reshape for SVD
+            batch_size, channels, K, L = trajectory_matrix.shape
+            trajectory_matrix = trajectory_matrix.reshape(-1, K, L)  # Shape: (batch_size * channels, K, L)
+            
+            # SVD decomposition using PyTorch
+            U, S, Vh = torch.linalg.svd(trajectory_matrix, full_matrices=False)
+            
+            # Print shapes for debugging
+            # print(f"U shape: {U.shape}, S shape: {S.shape}, Vh shape: {Vh.shape}")
+            
+            # Reconstruct using first component
+            reconstructed = torch.zeros_like(trajectory_matrix)
+            # print(f"reconstructed initial shape: {reconstructed.shape}")
+            
+            # Get the first components and ensure they have the same batch dimension
+            u = U[:, 0]  # Shape: (batch_size * channels, 10)
+            s = S[:, 0]  # Shape: (batch_size * channels,)
+            v = Vh[:, 0, :]  # Shape: (batch_size * channels, 10)
+            
+            # Print shapes for debugging
+            # print(f"u shape: {u.shape}, s shape: {s.shape}, v shape: {v.shape}")
+            
+            # Ensure all components have the same batch dimension
+            assert u.shape[0] == s.shape[0] == v.shape[0], f"Batch dimensions don't match: u={u.shape}, s={s.shape}, v={v.shape}"
+            
+            # Reshape s for broadcasting
+            s = s.unsqueeze(-1)  # Shape: (batch_size * channels, 1)
+            # print(f"s after unsqueeze shape: {s.shape}")
+            
+            # Compute reconstruction for each position
+            for i in range(K):
+                # Compute outer product for this position
+                # First multiply u and s, then multiply with v
+                u_s = u * s  # Shape: (batch_size * channels, 10)
+                # print(f"u_s shape: {u_s.shape}")
+                
+                # Compute the outer product
+                outer = torch.bmm(u_s.unsqueeze(-1), v.unsqueeze(1))  # Shape: (batch_size * channels, 10, 10)
+                # print(f"outer before sum shape: {outer.shape}")
+                
+                # Sum along the middle dimension
+                outer = outer.sum(dim=1)  # Shape: (batch_size * channels, 10)
+                # print(f"outer after sum shape: {outer.shape}")
+                # print(f"reconstructed[:, i:i+L] shape: {reconstructed[:, i:i+L].shape}")
+                
+                # Ensure the shapes match before adding
+                if outer.shape[1] != L:
+                    outer = outer[:, :L]  # Truncate or pad to match L
+                
+                # Reshape outer to match reconstructed's dimensions
+                outer = outer.unsqueeze(1)  # Shape: (batch_size * channels, 1, L)
+                reconstructed[:, i:i+L] += outer
+            
+            reconstructed /= L
+            
+            # Reshape back to original dimensions
+            reconstructed = reconstructed.reshape(batch_size, channels, K, L)
+            
+            # Diagonal averaging to get back the time series
+            final_series = torch.zeros_like(time_series)
+            for i in range(K):
+                final_series[..., i:i+L] += reconstructed[..., i, :]
+            final_series /= L
+            
+            processed.append(final_series)
+        
+        # Stack along frequency dimension
+        processed = torch.stack(processed, dim=-1)  # Shape: (batch_size, channels, time_steps, freq_bins)
+        
+        return processed
+
 class PANNS_CNN6(nn.Module):
     def __init__(self, sample_rate, window_size, hop_size, mel_bins, fmin, 
                  fmax, num_classes, frontend='logmel', batch_size=200,

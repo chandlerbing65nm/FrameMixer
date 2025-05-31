@@ -25,7 +25,7 @@ python test.py \
     --batch_size 200 \
     --dataset affia3k \
     --data_path /scratch/project_465001389/chandler_scratch/Datasets/affia3k \
-    --checkpoint /scratch/project_465001389/chandler_scratch/Projects/FrameMixer/checkpoints/ablation/fma/affia3k_logmel_panns_cnn6_fma_best_map_dur-2.0_sr-128000_win-2048_hop-1024_mel-64_fmin-50_fmax-none_cls-4_seed-20_bs-200_epoch-500_loss-ce_abl-fma_unknown_withnoise_seg-0.3.pth \
+    --checkpoint /scratch/project_465001389/chandler_scratch/Projects/FrameMixer/checkpoints/affia3k_logmel_panns_cnn6_fma_best_map_dur-2.0_sr-128000_win-2048_hop-1024_mel-64_fmin-50_fmax-none_cls-4_seed-20_bs-200_epoch-500_loss-ce.pth \
     --model_name "panns_cnn6" \
     --spec_aug "fma" \
     --num_classes 4 \
@@ -35,9 +35,9 @@ python test.py \
     --mel_bins 64 \
     --fmin 50 \
     --target_duration 2 \
-    --ablation \
-    --noise \
-    --noise_segment_ratio 0.3 \
+    # --ablation \
+    # --noise \
+    # --noise_segment_ratio 0.3 \
     # --specmix_params '0.7,16,32,4,4' \
 
 # ############################ UFFIA ############################

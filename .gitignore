@@ -10,6 +10,8 @@ wandb/
 weights/
 logs/
 __pycache__/
+probs/
+probs_noise_0.1/
 *.pkl
 *.pth
 *.done
